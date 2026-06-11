@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>🍭 Sweet Crush — Match-3 Puzzle</title>
+<title>🌟 StarBurst Saga — Match-3 Adventure</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -38,7 +38,7 @@ body {
   margin-bottom: 10px;
   backdrop-filter: blur(10px);
 }
-.logo { font-size: 1.3rem; font-weight: 900; background: linear-gradient(135deg, #ff6bcd, #ffd700); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.logo { font-size: 1.3rem; font-weight: 900; background: linear-gradient(135deg, #ff6bcd, #ffd700, #00ffcc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 .hud { display:flex; gap:14px; align-items:center; }
 .hud-box { text-align:center; }
 .hud-val { font-size:1.1rem; font-weight:800; color:#ffd700; line-height:1; }
@@ -267,12 +267,12 @@ body {
 <div id="app">
 
   <header class="header">
-    <div class="logo">🍭 Sweet Crush</div>
+    <div class="logo">🌟 StarBurst Saga</div>
     <div class="hud">
       <div class="hud-box"><div class="hud-val" id="score-val">0</div><div class="hud-lbl">Score</div></div>
       <div class="hud-box"><div class="hud-val" id="best-val">0</div><div class="hud-lbl">Best</div></div>
       <div class="hud-box"><div class="hud-val" id="level-val">1</div><div class="hud-lbl">Level</div></div>
-      <button class="btn btn-primary" onclick="showLevelSelect()" style="padding:6px 12px;font-size:.75rem;">Map</button>
+      <button class="btn btn-primary" onclick="showLevelSelect()" style="padding:6px 12px;font-size:.75rem;">Map</button> <button class="btn btn-primary" onclick="toggleBgMusic()" id="music-btn" style="padding:6px 10px;font-size:.75rem;">🎵</button>
     </div>
   </header>
 
@@ -342,7 +342,7 @@ body {
 <!-- Tutorial overlay -->
 <div id="overlay-tutorial" class="overlay" style="display:none">
   <div class="modal">
-    <h2>🍭 How to Play</h2>
+    <h2>🌟 How to Play StarBurst Saga</h2>
     <p style="text-align:left;line-height:1.8;font-size:.9rem">
       ✨ <b>Swap</b> adjacent gems to match 3 or more<br>
       💥 Match 4 → <b>Bomb gem</b> (explodes 3×3)<br>
@@ -356,8 +356,87 @@ body {
 </div>
 
 <script>
+
 // ═══════════════════════════════════════════════════════════════
-//  SWEET CRUSH — Match-3 Engine
+//  STARBURST SAGA — Sound Engine (Web Audio API)
+// ═══════════════════════════════════════════════════════════════
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let actx = null;
+
+function getCtx() {
+  if (!actx) actx = new AudioCtx();
+  return actx;
+}
+
+// Resume AudioContext on first user interaction (browser policy)
+document.addEventListener('click', () => { if(actx && actx.state==='suspended') actx.resume(); }, {once:true});
+
+function playTone(freq, type='sine', duration=0.1, vol=0.3, delay=0) {
+  try {
+    const ctx = getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(vol, ctx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + duration + 0.05);
+  } catch(e) {}
+}
+
+function playChord(freqs, duration=0.15, vol=0.25) {
+  freqs.forEach((f,i) => playTone(f,'sine',duration,vol,i*0.03));
+}
+
+// Game sounds
+function snd_select()   { playTone(440,'sine',0.08,0.2); }
+function snd_swap()     { playTone(330,'sine',0.06,0.2); playTone(440,'sine',0.06,0.2,0.06); }
+function snd_match3()   { playChord([523,659,784],0.2,0.3); }
+function snd_match4()   { playChord([523,659,784,1047],0.25,0.35); }
+function snd_match5()   { playChord([523,659,784,1047,1319],0.3,0.4); }
+function snd_cascade()  { [400,500,600,700,800].forEach((f,i) => playTone(f,'sine',0.1,0.25,i*0.05)); }
+function snd_special()  {
+  [800,1000,1200,1000,800].forEach((f,i) => playTone(f,'square',0.08,0.2,i*0.04));
+}
+function snd_win() {
+  const melody = [523,659,784,1047,784,1047,1319];
+  melody.forEach((f,i) => playTone(f,'sine',0.18,0.4,i*0.12));
+}
+function snd_lose() {
+  [400,350,300,250,200].forEach((f,i) => playTone(f,'sawtooth',0.15,0.3,i*0.1));
+}
+function snd_combo(n) {
+  const base = 400 + n*100;
+  [base,base*1.25,base*1.5].forEach((f,i) => playTone(f,'sine',0.1,0.35,i*0.06));
+}
+function snd_bomb() {
+  // Low rumble + crack
+  playTone(60,'sawtooth',0.3,0.6);
+  playTone(120,'square',0.15,0.4,0.05);
+  playTone(200,'sine',0.1,0.3,0.1);
+}
+function snd_stripe() {
+  // Whoosh effect
+  for(let i=0;i<10;i++) playTone(200+i*80,'sine',0.05,0.2,i*0.02);
+}
+function snd_colorBomb() {
+  // Rainbow sound
+  for(let i=0;i<7;i++) playTone(262*Math.pow(1.12,i),'sine',0.15,0.3,i*0.07);
+}
+function snd_booster() {
+  playChord([440,554,659],0.2,0.4);
+}
+function snd_levelUp() {
+  const fanfare=[523,523,523,415,523,659,523,659,784];
+  fanfare.forEach((f,i)=>playTone(f,'sine',0.14,0.45,i*0.1));
+}
+function snd_tick() { playTone(220,'sine',0.04,0.1); }
+
+// ═══════════════════════════════════════════════════════════════
+//  STARBURST SAGA — Match-3 Engine
 // ═══════════════════════════════════════════════════════════════
 
 const GEMS = ['🍭','🍬','🍦','🧁','🍰','🎂'];
@@ -544,13 +623,13 @@ function onCellClick(r,c){
   }
 
   if(!state.selected){
-    state.selected=[r,c]; clearHint();
+    state.selected=[r,c]; clearHint(); snd_select();
     renderBoard(); return;
   }
   const [sr,sc]=state.selected;
   if(sr===r && sc===c){ state.selected=null; renderBoard(); return; }
   if(isAdjacent(sr,sc,r,c)){
-    state.selected=null;
+    state.selected=null; snd_swap();
     trySwap(sr,sc,r,c);
   } else {
     state.selected=[r,c]; renderBoard();
@@ -646,6 +725,7 @@ function findMatches(){
 // ── Resolve matches ──────────────────────────────────────────
 async function resolveMatches(matchGroups){
   state.combo++;
+  if(state.combo>2) snd_combo(state.combo);
   const allCells=new Set();
   matchGroups.forEach(g=>g.cells.forEach(([r,c])=>allCells.add(r*COLS+c)));
 
@@ -654,13 +734,15 @@ async function resolveMatches(matchGroups){
   for(const g of matchGroups){
     const n=g.cells.length;
     const pivot=g.cells[Math.floor(g.cells.length/2)];
-    if(n>=5){ toCreate.push({r:pivot[0],c:pivot[1],s:SPECIAL_COLOR}); }
-    else if(n===4){ toCreate.push({r:pivot[0],c:pivot[1],s:g.dir==='h'?SPECIAL_STRIPE_H:SPECIAL_STRIPE_V}); }
+    if(n>=5){ snd_colorBomb(); toCreate.push({r:pivot[0],c:pivot[1],s:SPECIAL_COLOR}); }
+    else if(n===4){ snd_stripe(); toCreate.push({r:pivot[0],c:pivot[1],s:g.dir==='h'?SPECIAL_STRIPE_H:SPECIAL_STRIPE_V}); }
     else if(n>=3 && matchGroups.filter(g2=>g2.cells.some(([r,c])=>g.cells.some(([r2,c2])=>r===r2&&c===c2))).length>1){
       toCreate.push({r:pivot[0],c:pivot[1],s:SPECIAL_BOMB});
     }
   }
 
+  // Sound per match size
+  const ms=allCells.size; if(ms>=5)snd_match5(); else if(ms>=4)snd_match4(); else snd_match3();
   // Animate matched cells out
   allCells.forEach(idx=>{
     const r=Math.floor(idx/COLS), c=idx%COLS;
@@ -793,9 +875,10 @@ function activateBooster(type){
   }
 }
 function applyBooster(r,c){
+  snd_booster();
   const type=state.activeBooster;
   if(type==='hammer'){
-    state.boosters.hammer--;
+    state.boosters.hammer--; snd_bomb();
     const idx=r*COLS+c;
     state.board[idx]=null; state.specials[idx]=SPECIAL_NONE; state.locked[idx]=false;
     state.score+=50;
@@ -874,13 +957,13 @@ function showWin(stars){
     starsEl.appendChild(s);
     if(i<stars) setTimeout(()=>s.classList.add('lit'),(i+1)*300);
   }
-  document.getElementById('overlay-win').style.display='flex';
+  snd_win(); snd_levelUp(); document.getElementById('overlay-win').style.display='flex';
 }
 function showLose(){
   const lv=LEVELS[state.level-1];
   document.getElementById('lose-msg').textContent=
     `You scored ${state.score.toLocaleString()} but needed ${lv.goal.toLocaleString()}. Don't give up!`;
-  document.getElementById('overlay-lose').style.display='flex';
+  snd_lose(); document.getElementById('overlay-lose').style.display='flex';
 }
 function hideOverlay(id){ document.getElementById(id).style.display='none'; }
 
@@ -917,6 +1000,30 @@ function showLevelSelect(){
 
 // ── Utils ────────────────────────────────────────────────────
 function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+
+// Background music (subtle arpeggio)
+let bgMusicOn = false;
+let bgMusicTimer = null;
+const BG_NOTES = [261,329,392,329,261,329,392,440,392,329];
+let bgNote = 0;
+
+function toggleBgMusic() {
+  bgMusicOn = !bgMusicOn;
+  document.getElementById('music-btn').textContent = bgMusicOn ? '🔇' : '🎵';
+  if(bgMusicOn) startBgMusic();
+  else if(bgMusicTimer) clearInterval(bgMusicTimer);
+}
+
+function startBgMusic() {
+  if(bgMusicTimer) clearInterval(bgMusicTimer);
+  bgMusicTimer = setInterval(() => {
+    if(!bgMusicOn) return;
+    const f = BG_NOTES[bgNote % BG_NOTES.length];
+    playTone(f, 'sine', 0.3, 0.08);
+    bgNote++;
+  }, 400);
+}
 
 // ── Start ────────────────────────────────────────────────────
 document.getElementById('overlay-tutorial').style.display='flex';
