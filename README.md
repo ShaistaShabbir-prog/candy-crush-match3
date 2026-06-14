@@ -6,7 +6,7 @@
 
 [![Live](https://img.shields.io/badge/🎮_Play_Now-GitHub_Pages-E91E63?style=for-the-badge)](https://ShaistaShabbir-prog.github.io/candy-crush-match3)
 [![HTML5](https://img.shields.io/badge/HTML5_Canvas-E34F26?style=for-the-badge&logo=html5&logoColor=white)](https://ShaistaShabbir-prog.github.io/candy-crush-match3)
-[![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](./LICENSE)
 
 </div>
 
@@ -72,4 +72,4 @@ open index.html   # or any static server
 
 ## 📄 License
 
-Proprietary — All rights reserved © 2026 Shaista Shabbir.
+MIT License - see [LICENSE](./LICENSE).
