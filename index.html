@@ -261,6 +261,9 @@ body {
 /* ── Responsive ── */
 @media(min-width:500px){ :root{--cell:64px;} .cell{font-size:1.9rem;} }
 </style>
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#E91E63">
+  <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 <canvas id="particles"></canvas>
@@ -1028,5 +1031,6 @@ function startBgMusic() {
 // ── Start ────────────────────────────────────────────────────
 document.getElementById('overlay-tutorial').style.display='flex';
 </script>
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
 </body>
 </html>
