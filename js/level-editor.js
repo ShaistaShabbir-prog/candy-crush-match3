@@ -1,72 +1,113 @@
-// Issue #8: Level editor — create and share custom levels via URL
-const LevelEditor = {
-  grid: [],
-  rows: 8,
-  cols: 8,
-  CANDY_TYPES: ['🍭', '🍬', '🍫', '🧁', '🍩', '🌈', '💎'],
+// Issue #8: Level Editor — create custom puzzles, share via URL
+(function(){
+  const CANDY_TYPES = ['🍭','🍬','🍡','🍰','🍩','🌈','💎'];
+  let editGrid = Array.from({length:8}, () => Array(8).fill(0));
+  let editTarget = 1000;
+  let editMoves  = 20;
 
-  init(containerId) {
-    this.container = document.getElementById(containerId);
-    if (!this.container) return;
-    this.grid = Array.from({length: this.rows}, () => Array(this.cols).fill(0));
-    this.render();
-  },
+  function encodeLevel() {
+    const flat = editGrid.flat().join('');
+    return btoa(JSON.stringify({g:flat,t:editTarget,m:editMoves}));
+  }
 
-  render() {
-    if (!this.container) return;
-    this.container.innerHTML = `
-      <h2 style="margin:0 0 12px;color:#fbbf24">🎨 Level Editor</h2>
-      <div style="display:grid;grid-template-columns:repeat(${this.cols},44px);gap:3px;margin-bottom:14px">
-        ${this.grid.flat().map((c, i) => `
-          <button onclick="LevelEditor.cycleCell(${Math.floor(i/this.cols)},${i%this.cols})"
-            style="width:44px;height:44px;border-radius:8px;border:1.5px solid rgba(255,255,255,.15);
-            background:rgba(255,255,255,.05);font-size:1.4rem;cursor:pointer;
-            transition:transform .1s" title="Click to change">${c ? this.CANDY_TYPES[c-1] : '⬜'}
-          </button>`).join('')}
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button onclick="LevelEditor.shareLevel()" style="padding:8px 16px;border-radius:8px;background:#7c3aed;color:#fff;border:none;cursor:pointer;font-weight:700">🔗 Share Level</button>
-        <button onclick="LevelEditor.clearGrid()" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:none;cursor:pointer">🗑️ Clear</button>
-        <button onclick="LevelEditor.randomLevel()" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,.1);color:#fff;border:none;cursor:pointer">🎲 Random</button>
-      </div>
-      <div id="share-url" style="margin-top:10px;font-size:.75rem;color:#94a3b8;word-break:break-all"></div>`;
-  },
-
-  cycleCell(r, c) {
-    this.grid[r][c] = (this.grid[r][c] + 1) % (this.CANDY_TYPES.length + 1);
-    this.render();
-  },
-
-  clearGrid() {
-    this.grid = Array.from({length: this.rows}, () => Array(this.cols).fill(0));
-    this.render();
-  },
-
-  randomLevel() {
-    this.grid = Array.from({length: this.rows}, () =>
-      Array.from({length: this.cols}, () => Math.floor(Math.random() * this.CANDY_TYPES.length) + 1)
-    );
-    this.render();
-  },
-
-  shareLevel() {
-    const encoded = btoa(JSON.stringify(this.grid));
-    const url = `${location.origin}${location.pathname}?level=${encoded}`;
-    history.pushState({}, '', `?level=${encoded}`);
-    const el = document.getElementById('share-url');
-    if (el) el.textContent = '✅ URL updated! Share: ' + url;
-    try { navigator.clipboard.writeText(url); } catch {}
-  },
-
-  loadFromURL() {
-    const params = new URLSearchParams(location.search);
-    const encoded = params.get('level');
-    if (!encoded) return;
+  function decodeLevel(hash) {
     try {
-      this.grid = JSON.parse(atob(encoded));
-      this.render();
+      const d = JSON.parse(atob(hash));
+      editTarget = d.t; editMoves = d.m;
+      editGrid = [];
+      for(let r=0;r<8;r++) editGrid.push(d.g.slice(r*8,(r+1)*8).split('').map(Number));
     } catch {}
-  },
-};
+  }
 
-window.LevelEditor = LevelEditor;
+  function buildEditorUI() {
+    const div = document.createElement('div');
+    div.id = 'ng-level-editor';
+    div.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;overflow-y:auto;padding:20px';
+
+    div.innerHTML = `
+      <div style="max-width:520px;margin:0 auto;background:#1a1a2e;border-radius:20px;padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="color:#fff;font-size:1.1rem;margin:0">🎮 Level Editor</h2>
+          <button onclick="document.getElementById('ng-level-editor').style.display='none'"
+            style="background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:8px;padding:4px 10px;cursor:pointer">✕</button>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <label style="color:#aaa;font-size:.8rem;display:flex;align-items:center;gap:6px">
+            Target: <input id="ed-target" type="number" value="1000" min="100" step="100"
+              style="width:80px;padding:4px 8px;border-radius:6px;border:1px solid #444;background:#0f0f1a;color:#fff;font-size:.8rem">
+          </label>
+          <label style="color:#aaa;font-size:.8rem;display:flex;align-items:center;gap:6px">
+            Moves: <input id="ed-moves" type="number" value="20" min="5" max="50"
+              style="width:60px;padding:4px 8px;border-radius:6px;border:1px solid #444;background:#0f0f1a;color:#fff;font-size:.8rem">
+          </label>
+        </div>
+        <div id="editor-grid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          ${CANDY_TYPES.map((c,i)=>`<button onclick="selectedType=${i}" data-type="${i}"
+            style="font-size:1.4rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);
+            border-radius:8px;width:40px;height:40px;cursor:pointer">${c}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="shareLevel()" style="flex:1;padding:10px;background:#7c3aed;color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.85rem;font-weight:700">📋 Copy share link</button>
+          <button onclick="randomFill()" style="padding:10px 14px;background:rgba(255,255,255,.1);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.85rem">🎲 Random</button>
+        </div>
+        <p id="share-msg" style="color:#22c55e;font-size:.8rem;text-align:center;margin-top:10px;display:none">Link copied!</p>
+      </div>`;
+
+    document.body.appendChild(div);
+    renderEditorGrid();
+    return div;
+  }
+
+  let selectedType = 0;
+
+  function renderEditorGrid() {
+    const grid = document.getElementById('editor-grid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+      const cell = document.createElement('button');
+      cell.style.cssText = 'aspect-ratio:1;font-size:1.2rem;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+      cell.textContent = CANDY_TYPES[editGrid[r][c]] || '';
+      cell.onclick = () => {
+        editGrid[r][c] = selectedType;
+        cell.textContent = CANDY_TYPES[selectedType] || '';
+      };
+      grid.appendChild(cell);
+    }
+  }
+
+  function randomFill() {
+    editGrid = Array.from({length:8}, () => Array.from({length:8}, () => Math.floor(Math.random()*5)));
+    renderEditorGrid();
+  }
+
+  function shareLevel() {
+    editTarget = parseInt(document.getElementById('ed-target')?.value||'1000');
+    editMoves  = parseInt(document.getElementById('ed-moves')?.value||'20');
+    const encoded = encodeLevel();
+    const url = `${location.origin}${location.pathname}#level=${encoded}`;
+    navigator.clipboard.writeText(url).then(() => {
+      const msg = document.getElementById('share-msg');
+      if(msg){msg.style.display='block';setTimeout(()=>msg.style.display='none',2500);}
+    });
+  }
+
+  // Check for level in URL on load
+  window.addEventListener('load', () => {
+    const hash = location.hash.match(/#level=(.+)/);
+    if(hash) decodeLevel(hash[1]);
+    buildEditorUI();
+  });
+
+  // Open editor button
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.createElement('button');
+    btn.textContent = '🎮 Level Editor';
+    btn.style.cssText = 'position:fixed;bottom:80px;left:16px;z-index:998;padding:8px 14px;background:rgba(124,58,237,.9);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700';
+    btn.onclick = () => { const ed=document.getElementById('ng-level-editor'); if(ed)ed.style.display=ed.style.display==='none'?'block':'none'; };
+    document.body.appendChild(btn);
+  });
+
+  window.LevelEditor = {openEditor: ()=>{const ed=document.getElementById('ng-level-editor');if(ed)ed.style.display='block';}, encodeLevel, decodeLevel, randomFill};
+})();
