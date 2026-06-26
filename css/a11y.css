@@ -1,0 +1,17 @@
+/* Accessibility styles for Sweet Crush */
+.game-cell:focus, .game-cell[data-focused] {
+  outline: 3px solid #fbbf24 !important;
+  outline-offset: 2px;
+  z-index: 10;
+  position: relative;
+}
+.high-contrast .game-cell { filter: contrast(2) saturate(0.5); }
+.high-contrast { background: #000 !important; }
+.high-contrast * { color: #fff !important; border-color: #fff !important; }
+.reduced-motion * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+@media (prefers-contrast: high) {
+  .game-cell { border: 2px solid #fff !important; }
+}
