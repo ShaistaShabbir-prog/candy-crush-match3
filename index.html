@@ -1038,5 +1038,23 @@ document.getElementById('overlay-tutorial').style.display='flex';
 <script src="js/a11y.js"></script>
 <div id="leaderboard" style="max-width:400px;margin:1rem auto;background:#161b22;border-radius:8px;padding:1rem;border:1px solid #30363d"></div>
 <script src="js/leaderboard.js"></script>
+<script src="js/difficulty.js"></script>
+<script src="js/multiplayer.js"></script>
+
+<!-- Multiplayer & Difficulty buttons — injected by js/multiplayer.js and js/difficulty.js -->
+<div id="game-mode-bar" style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;z-index:9980;background:rgba(13,17,23,0.92);
+  border-radius:30px;padding:8px 16px;border:1px solid #30363d;box-shadow:0 4px 20px rgba(0,0,0,0.5)">
+  <button onclick="Difficulty.showModal()"
+    style="background:linear-gradient(135deg,#3b82f6,#7c3aed);color:#fff;border:none;
+      padding:8px 16px;border-radius:20px;font-weight:700;cursor:pointer;font-size:0.82rem">
+    ⚙️ Difficulty
+  </button>
+  <button onclick="Multiplayer.showSetupModal()"
+    style="background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;border:none;
+      padding:8px 16px;border-radius:20px;font-weight:700;cursor:pointer;font-size:0.82rem">
+    👥 2 Players
+  </button>
+</div>
 </body>
 </html>
