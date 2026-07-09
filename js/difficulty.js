@@ -101,7 +101,13 @@ const Difficulty = (function() {
   // Init
   window.DIFFICULTY_CONFIG = LEVELS[current];
 
-  return { get, getKey, set, showModal, LEVELS };
+  function getBadge() {
+    const d = LEVELS[current];
+    return `<span style="background:${d.color}22;color:${d.color};border:1px solid ${d.color}55;
+      border-radius:20px;padding:2px 8px;font-size:0.7rem;font-weight:700">${d.label}</span>`;
+  }
+
+  return { get, getKey, set, showModal, getBadge, LEVELS };
 })();
 
 window.Difficulty = Difficulty;
